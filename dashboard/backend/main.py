@@ -26,20 +26,27 @@ MODELS_DIR = BASE_DIR / "flood_project_data" / "models"
 DATA_DIR = BASE_DIR / "flood_project_data" / "processed"
 OUTPUTS_DIR = BASE_DIR / "flood_project_data" / "outputs"
 
-# Load Model, Scaler, and Meta
-try:
-    with open(MODELS_DIR / "xgboost_flood_model.pkl", "rb") as f:
-        model = pickle.load(f)
-    with open(MODELS_DIR / "scaler.pkl", "rb") as f:
-        scaler = pickle.load(f)
-    with open(MODELS_DIR / "model_meta.json", "r") as f:
-        meta = json.load(f)
-    FEATURE_COLS = meta["feature_cols"]
-except Exception as e:
-    print(f"Error loading model files: {e}")
-    model = None
-    scaler = None
-    FEATURE_COLS = []
+model = None
+scaler = None
+FEATURE_COLS = []
+
+def load_model_artifacts():
+    global model, scaler, FEATURE_COLS
+    try:
+        with open(MODELS_DIR / "xgboost_flood_model.pkl", "rb") as f:
+            model = pickle.load(f)
+        with open(MODELS_DIR / "scaler.pkl", "rb") as f:
+            scaler = pickle.load(f)
+        with open(MODELS_DIR / "model_meta.json", "r") as f:
+            meta = json.load(f)
+        FEATURE_COLS = meta["feature_cols"]
+        print("Model, Scaler, and Metadata loaded successfully.")
+        return True
+    except Exception as e:
+        print(f"Error loading model files: {e}")
+        return False
+
+load_model_artifacts()
 
 class PredictionInput(BaseModel):
     rainfall_mm: float
@@ -95,6 +102,8 @@ async def root():
 
 @app.post("/predict", response_model=PredictionOutput)
 async def predict(data: PredictionInput):
+    if not model or not scaler:
+        load_model_artifacts()
     if not model or not scaler:
         raise HTTPException(status_code=500, detail="Model or Scaler not loaded")
 

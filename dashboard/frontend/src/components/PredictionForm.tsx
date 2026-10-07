@@ -24,8 +24,8 @@ export default function PredictionForm() {
         try {
             const data = await predictFlood(formData);
             setResult(data);
-        } catch (err) {
-            setError("Failed to connect to the prediction server. Make sure the backend is running.");
+        } catch (err: any) {
+            setError(err?.message || "Failed to connect to the prediction server. Make sure the backend is running.");
             console.error(err);
         } finally {
             setLoading(false);
